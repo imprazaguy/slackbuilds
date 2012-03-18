@@ -1,0 +1,4 @@
+This repository is for working with sbopkg.
+
+/etc/sbopkg/repos.d/51-ig.repo
+IG master "imprazaguy's repository" _ig git git://github.com/imprazaguy/slackbuilds.git@master ""
