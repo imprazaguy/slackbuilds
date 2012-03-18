@@ -1,0 +1,12 @@
+diff -Nur grub-1.99.orig/util/grub.d/10_linux.in grub-1.99/util/grub.d/10_linux.in
+--- grub-1.99.orig/util/grub.d/10_linux.in	2011-05-15 04:36:49.000000000 +0800
++++ grub-1.99/util/grub.d/10_linux.in	2012-01-21 21:49:49.326000520 +0800
+@@ -150,7 +150,7 @@
+   basename=`basename $linux`
+   dirname=`dirname $linux`
+   rel_dirname=`make_system_path_relative_to_its_root $dirname`
+-  version=`echo $basename | sed -e "s,^[^0-9]*-,,g"`
++  version=`echo $basename | sed -e "s,^[^0-9-]*-,,g"`
+   alt_version=`echo $version | sed -e "s,\.old$,,g"`
+   linux_root_device_thisversion="${LINUX_ROOT_DEVICE}"
+ 

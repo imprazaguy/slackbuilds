@@ -1,0 +1,124 @@
+#!/bin/sh
+
+# Slackware build script for cjkunifonts
+
+# Copyright 2009  Guan-Zhong Huang, Taiwan <imprazaguy@gmail.com>
+# Copyright 2008, 2009  Eric Hameleers, Eindhoven, NL
+# Copyright 2008, 2009  Patrick J. Volkerding, Sebeka, MN, USA
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# This SlackBuild script refers to script of wqy-zenhei-font-ttf package, so I
+# add the original copyright to the above
+
+
+PRGNAM=cjkunifonts
+VERSION=${VERSION:-0.2.20080216.1}
+ARCH=noarch
+BUILD=${BUILD:-1}
+TAG=${TAG:-_SBo}
+SRCNAM1=ttf-arphic-ukai
+SRCNAM2=ttf-arphic-uming
+SRC1=${SRCNAM1}_${VERSION}.orig.tar.gz
+SRC2=${SRCNAM2}_${VERSION}.orig.tar.gz
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/SBo}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+PKGTYPE=${PKGTYPE:-tgz}
+
+# Exit on most errors
+set -e
+
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+
+# Font directory location depends on the X build prefix:
+# Determine what X we're running (the modular X returns the prefix
+# in the next command, while older versions stay silent):
+XPREF=$(pkg-config --variable=prefix x11)
+if [ "$XPREF" = "" ]; then
+  XPREF='/usr/X11R6'
+  FONTDIR="$XPREF/lib/X11/fonts/TTF"
+else
+  FONTDIR="/usr/share/fonts/TTF"
+fi
+mkdir -p $PKG$FONTDIR
+
+cd $TMP
+rm -rf $PRGNAM-$VERSION
+mkdir -p $PRGNAM-$VERSION/{$SRCNAM1,$SRCNAM2}
+cd $PRGNAM-$VERSION
+tar xvf $CWD/$SRC1 -C $SRCNAM1
+tar xvf $CWD/$SRC2 -C $SRCNAM2
+chown -R root:root .
+find . \
+ \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+ -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
+ -exec chmod 644 {} \;
+
+# Install font
+cp {$SRCNAM1,$SRCNAM2}/*.ttc $PKG$FONTDIR/
+
+# Add the fontconfig file and symlink
+mkdir -p $PKG/etc/fonts/conf.{d,avail}
+cp {$SRCNAM1,$SRCNAM2}/*.conf $PKG/etc/fonts/conf.avail/
+( cd $PKG/etc/fonts/conf.d && \
+  ln -sf ../conf.avail/*.conf .
+)
+
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/{$SRCNAM1,$SRCNAM2}
+( cd $SRCNAM1
+  cp -a \
+    CONTRIBUTERS FONTLOG Font_Comparison_ZenKai_UKai.odt \
+    Font_Comparison_ZenKai_UKai.pdf INSTALL KNOWN_ISSUES NEWS README TODO \
+    license \
+    $PKG/usr/doc/$PRGNAM-$VERSION/$SRCNAM1
+)
+( cd $SRCNAM2
+  cp -a \
+    CONTRIBUTERS FONTLOG Font_Comparison_ShanHeiSun_UMing.odt \
+    Font_Comparison_ShanHeiSun_UMing.pdf INSTALL KNOWN_ISSUES NEWS README \
+    README.Bitmap TODO license \
+    $PKG/usr/doc/$PRGNAM-$VERSION/$SRCNAM2
+)
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+
+# Post-install script:
+cat << EOF > $PKG/install/doinst.sh
+# There's no need to chroot and do this during initial
+# install, since there is a post-install script that
+# does the same thing, saving time.
+# Update X font indexes and the font cache:
+if [ -x /usr/bin/mkfontdir ]; then
+  /usr/bin/mkfontscale $FONTDIR
+  /usr/bin/mkfontdir $FONTDIR
+fi
+if [ -x /usr/bin/fc-cache ]; then
+  /usr/bin/fc-cache $FONTDIR
+fi
+EOF
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

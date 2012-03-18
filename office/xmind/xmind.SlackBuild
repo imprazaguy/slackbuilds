@@ -1,0 +1,95 @@
+#!/bin/sh
+#
+# Slackware build script for XMind
+
+# Copyright 2010  Guan-Zhong Huang, Taiwan <imprazaguy@gmail.com>
+# (This script is modified from Erik's google-chrome.SlackBuild)
+# Copyright 2009-2010  Erik Hanson, Minneapolis, MN, USA
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+PRGNAM=xmind
+VERSION=${VERSION:-3.2.0.201009142023}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-1}
+TAG=${TAG:-_SBo}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/SBo}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+case "$ARCH" in
+  i?86) DEBARCH="i386" ; LIBDIRSUFFIX="" ; ARCH=i386 ;;
+  x86_64) DEBARCH="amd64" ; LIBDIRSUFFIX="64" ;;
+esac
+
+set -eu
+
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+cd $PKG
+ar p $CWD/xmind-${VERSION}_${DEBARCH}.deb data.tar.gz | tar xzv
+chown -R root:root .
+chmod -R u+w,go+r-w,a-s .
+
+# Let usr/local/xmind be opt/xmind
+mv usr/local opt
+
+find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+# Add a wrapper to run XMind in /usr/bin
+mkdir -p $PKG/usr/bin
+cat <<EOF > $PKG/usr/bin/$PRGNAM
+#!/bin/sh
+cd \$HOME
+/opt/xmind/xmind \$@
+EOF
+chmod 0755 $PKG/usr/bin/$PRGNAM
+
+# Correct path in desktop file
+sed -i -e "s#Exec=/usr/local/xmind/xmind#Exec=xmind#" \
+  -e "s#Icon=/usr/local#Icon=/opt#" \
+  $PKG/usr/share/applications/xmind.desktop
+
+# Add mime icons
+mime_type=application-xmind
+mkdir -p $PKG/usr/share/icons/hicolor
+for icon in $(/bin/ls $CWD/${mime_type}_*.png); do
+  icon_size=$(basename $icon | sed "s/${mime_type}_\(.*\)\.png/\1/")
+  mkdir -p $PKG/usr/share/icons/hicolor/$icon_size/mimetypes
+  install -m 0644 $icon $PKG/usr/share/icons/hicolor/$icon_size/mimetypes/$mime_type.png
+done
+
+# Don't clobber any existing config files
+mv $PKG/opt/$PRGNAM/xmind-bin.ini \
+  $PKG/opt/$PRGNAM/xmind-bin.ini.new
+mv $PKG/opt/$PRGNAM/configuration/config.ini \
+  $PKG/opt/$PRGNAM/configuration/config.ini.new
+
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}

@@ -1,0 +1,24 @@
+GRUB2 (the GRand Unified Bootloader)
+
+GNU GRUB is a multiboot boot loader.
+
+If you want to set the size of gfxterm font,
+then specify FONT_SIZE=size in the build options.
+The default size is 14.
+
+If you want to install grub2 on GPT,
+you need to put a BIOS boot partition on GPT.
+
+To correctly detect kernel and initrd images, their names need to conform to
+the specific format:
+kernel: vmlinuz-<version>
+initrd: initrd.img-<version>
+<version> can have strings other than version numbers, e.g. generic-2.6.37.6.
+You can look into /etc/grub.d/10_linux for details.
+
+Some instructions you need to install grub:
+grub-install <device>
+grub-mkconfig -o <config_path>
+
+This requires os-prober, gnu-unifont, and help2man.
+
