@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.  Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in.  You must
+# make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+       |-----handy-ruler------------------------------------------------------|
+gitolite: gitolite (git repository hosting)
+gitolite:
+gitolite: Gitolite allows you to setup git hosting on a central server, with
+gitolite: very fine-grained access control and many more powerful features.
+gitolite:
+gitolite:
+gitolite:
+gitolite:
+gitolite:
+gitolite: Homepage: https://github.com/sitaramc/gitolite
+gitolite:

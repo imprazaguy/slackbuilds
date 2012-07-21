@@ -1,0 +1,116 @@
+#!/bin/sh
+
+# Slackware build script for gitolite
+
+# Copyright 2012  Guan-Zhong Huang, Taiwan <imprazaguy@gmail.com>
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+PRGNAM=gitolite
+VERSION=${VERSION:-3.4.8}
+BUILD=${BUILD:-1}
+TAG=${TAG:-_SBo}	
+
+SRCNAM=sitaramc-gitolite
+FULL_VERSION=v3.04-8-g57bea39
+COMMIT_ID=57bea39a1e65d29ce43ee8d0c1fbcb9ff19c0a9b
+SRCDIR=$SRCNAM-$(echo $COMMIT_ID | cut -b-7)
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/SBo}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+# If set, only this user can execute gitolite related command. Set empty if you
+# want all users can execute.
+GITUSER=${GITUSER:-git}
+
+set -eu
+
+if [ "$GITUSER" ]; then
+  if ! getent passwd $GITUSER &>/dev/null; then
+    cat << EOF
+User '$GITUSER' doesn't exist. You can create it by this command:
+useradd -r -m $GITUSER"
+If you want to give all users the privilege to execute gitolite commands, use
+GITUSER=""
+EOF
+    exit 1
+  fi
+fi
+
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+cd $TMP
+rm -rf $SRCDIR
+# Because wget may ignore Content-Disposition header, the downloaded filename
+# may be different. Check that and choose the right filename.
+if [ -r "$CWD/$SRCNAM-$FULL_VERSION.tar.gz" ]; then
+  tar xvf $CWD/$SRCNAM-$FULL_VERSION.tar.gz
+elif [ -r "$CWD/$COMMIT_ID" ]; then
+  tar xvf $CWD/$COMMIT_ID
+fi
+cd $SRCDIR
+chown -R root:root .
+find . \
+ \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+ -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
+ -exec chmod 644 {} \;
+
+# Change GL_BINDIR variable to correct value
+sed -i 's#$FindBin::RealBin#"/usr/libexec/gitolite"#' src/gitolite
+sed -i 's#$FindBin::RealBin#"/usr/libexec/gitolite"#' src/gitolite-shell
+# Manual installation
+mkdir -p $PKG/usr/bin
+mv src/gitolite $PKG/usr/bin/
+eval $(perl -V:installvendorlib)
+mkdir -p $PKG$installvendorlib
+mv src/lib/Gitolite $PKG$installvendorlib/
+mkdir -p $PKG/usr/libexec
+mv src $PKG/usr/libexec/gitolite
+echo $FULL_VERSION > $PKG/usr/libexec/gitolite/VERSION
+
+if [ "$GITUSER" ]; then
+  # Set execution permission to only user or group of $GITUSER
+  find $PKG -type f -perm -u=x \
+    -exec chown $GITUSER: '{}' \; \
+    -exec chmod o-x '{}' \;
+fi
+
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a \
+  CHANGELOG README.txt \
+  $PKG/usr/doc/$PRGNAM-$VERSION
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}

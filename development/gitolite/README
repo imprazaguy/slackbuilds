@@ -1,0 +1,34 @@
+Gitolite is an access control layer on top of git. Here are the features that
+most people see:
+
+* Use a single unix user ("real" user) on the server.
+* Provide access to many gitolite users:
+    * they are not "real" users,
+    * they do not get shell access.
+* Control access to many git repositories:
+    * read access controlled at the repo level,
+    * write access controlled at the branch/tag/file/directory level,
+      including who can rewind, create, and delete branches/tags.
+* Can be installed without root access, assuming git and perl are already
+  installed.
+* Authentication is most commonly done using sshd, but you can also use http
+  if you prefer (this may require root access).
+
+
+SlackBuild options:
+GITUSER=<user>  Set privilege of executing gitolite related commands to only
+                <user>; set empty if it is granted for all users
+
+
+After installing gitolite, you need setup gitolite repository. If gitolite
+privilege is limited to user 'git', then you need to change to 'git':
+$su - git
+And then setup the repository under the home directory of 'git':
+$gitolite setup -pk <admin's public key>
+
+If you want to upgrade gitolite, after upgrade the package, change to user
+'git' and execute:
+$gitolite setup
+
+For more information of gitolite, check:
+http://sitaramc.github.com/gitolite/master-toc.html
