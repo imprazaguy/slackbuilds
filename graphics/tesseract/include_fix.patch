@@ -1,0 +1,12 @@
+diff --git a/viewer/svutil.cpp b/viewer/svutil.cpp
+index b7fa31f..2bc1cc9 100644
+--- a/viewer/svutil.cpp
++++ b/viewer/svutil.cpp
+@@ -30,6 +30,7 @@ struct addrinfo {
+   int ai_protocol;
+ };
+ #else
++#include <unistd.h>
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ #include <pthread.h>
