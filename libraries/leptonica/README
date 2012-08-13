@@ -1,0 +1,6 @@
+leptonica is an open source C library for efficient image processing and image
+analysis operations. It supports many operations that are useful on document
+images and natural images.
+
+SlackBuild options:
+PROGRAMS=yes|no     Build additional programs (default: no)
