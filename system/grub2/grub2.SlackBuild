@@ -6,7 +6,7 @@
 # Modified by Guan-Zhong Huang (imprazaguy@gmail.com)
 
 PRGNAM=grub2
-VERSION=${VERSION:-1.99}
+VERSION=${VERSION:-2.00}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 
@@ -58,9 +58,8 @@ find . \
  \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
  -exec chmod 644 {} \;
 
-# Fix grub.d/10_linux to correctly detect kernel and initrd images under
-# Slackware
-patch -p1 < $CWD/grub_10_linux.patch
+# Fix grub.d/10_linux to correctly detect kernel and initrd images in Slackware
+patch -p1 < $CWD/10_linux.patch
 
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
@@ -85,7 +84,7 @@ find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | gr
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 # convert gnu-unifont to a font useable by grub2 gfxterm.
-$PKG/usr/bin/grub-mkfont -o $PKG/usr/share/grub/unifont.pf2 -v \
+$PKG/usr/bin/grub-mkfont -o $PKG/usr/share/grub/unicode.pf2 -v \
   -s $FONT_SIZE /usr/share/fonts/TTF/unifont.ttf
 
 rm -f $PKG/usr/info/dir
