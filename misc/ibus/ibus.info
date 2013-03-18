@@ -1,10 +1,12 @@
 PRGNAM="ibus"
-VERSION="1.4.0"
+VERSION="1.4.2"
 HOMEPAGE="http://code.google.com/p/ibus/"
-DOWNLOAD="http://ibus.googlecode.com/files/ibus-1.4.0.tar.gz"
-MD5SUM="b4f063794e89c71eb1f8cb543210da30"
+DOWNLOAD="http://ibus.googlecode.com/files/ibus-1.5.1.tar.gz \
+          http://download.kde.org/stable/4.8.5/src/kdeplasma-addons-4.8.5.tar.xz"
+MD5SUM="4cc29edea599d465e1ee53c39da27a57 \
+        e6e91c8795250aad062900be31d7a10b"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
-MAINTAINER="Grissiom"
-EMAIL="chaos.proton@gmail.com"
-APPROVED="dsomero,Niels Horn"
+REQUIRES="pyxdg"
+MAINTAINER="Guan-Zhong Huang"
+EMAIL="imprazaguy@gmail.com"

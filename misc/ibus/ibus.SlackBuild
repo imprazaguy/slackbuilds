@@ -4,6 +4,7 @@
 
 # Copyright 2006,2007,2008  Eric Hameleers, Eindhoven, NL
 # Copyright 2008, 2009  Patrick J. Volkerding, Sebeka, MN  USA
+# Copyright 2013 Guan-Zhong Huang, Taiwan <imprazaguy@gmail.com>
 # All rights reserved.
 #
 #   Permission to use, copy, modify, and distribute this software for
@@ -26,12 +27,26 @@
 
 # Modified by Grissiom <chaos.proton@gmail.com> to build ibus
 # Feedback (especially improvements) is encouraged!  :-)
-# Modified by Guan-Zhong Huang <imprazaguy@gmail.com>
 
 PRGNAM=ibus
-VERSION=${VERSION:-1.4.0}
+VERSION=${VERSION:-1.4.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
+
+#
+# SlackBuild Options
+#
+KIMPANEL=${KIMPANEL:-"yes"}
+USE_GCONF=${USE_GCONF:-"yes"}
+
+if [ "$KIMPANEL" = "yes" ]; then
+  KDE_VERSION=${KDE_VERSION:-4.8.5}
+fi
+if [ "$USE_GCONF" = "yes" ]; then
+  conf_opt="--enable-gconf --disable-dconf"
+else
+  conf_opt="--disable-gconf --enable-dconf"
+fi
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -60,14 +75,7 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-USE_GCONF=${USE_GCONF:-"yes"}
-if [ "$USE_GCONF" = "yes" ]; then
-  conf_opt="--enable-gconf"
-else
-  conf_opt="--disable-gconf --enable-memconf"
-fi
-
-set -e
+set -eu
 
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
@@ -75,6 +83,9 @@ cd $TMP
 rm -rf ${PRGNAM}-${VERSION}
 tar xvf $CWD/${PRGNAM}-${VERSION}.tar.gz
 cd ${PRGNAM}-${VERSION}
+if [ "$KIMPANEL" = "yes" ]; then
+  tar xvf $CWD/kdeplasma-addons-$KDE_VERSION.tar.xz
+fi
 chown -R root:root .
 find . \
  \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
@@ -89,28 +100,48 @@ CXXFLAGS="$SLKCFLAGS" \
   --libdir=/usr/lib${LIBDIRSUFFIX} \
   --sysconfdir=/etc \
   --localstatedir=/var \
-  --with-html-dir=/usr/share/gtk-doc/html \
+  --enable-shared \
+  --disable-static \
+  --disable-vala \
+  --disable-gtk-doc-html \
+  --disable-schemas-install \
+  --enable-surrounding-text \
   $conf_opt \
-  --disable-gtk3 \
   --build=$ARCH-slackware-linux
 
 make
 make DESTDIR=$PKG install
 
-# Add kimpanel support, panel.py is harvested from
-# http://websvn.kde.org/tags/KDE/4.4.3/kdeplasma-addons/applets/kimpanel/backend/ibus/panel.py
-mkdir $PKG/usr/share/ibus/ui/kimpanel
-cp $CWD/panel.py $PKG/usr/share/ibus/ui/kimpanel
-chmod 0755 $PKG/usr/share/ibus/ui/kimpanel/panel.py
-# Link the icon to where kimpanel will look for.
-cd $PKG/usr/share/ibus/icons
-  ln -s ../../icons/hicolor/scalable/apps/ibus.svg .
-cd -
-# Let ibus start automatically (since ibus 1.4, it won't do this itself)
-mkdir -p $PKG/etc/xdg/autostart
-cp $PKG/usr/share/applications/ibus.desktop $PKG/etc/xdg/autostart
+if [ "$KIMPANEL" = "yes" ]; then
+  # IBus 1.5 breaks kimpanel.
+  # See this: https://code.google.com/p/ibus/issues/detail?id=1577
+  ( cd $TMP/$PRGNAM-$VERSION/kdeplasma-addons-$KDE_VERSION
+    mkdir build
+    cd build
+      cmake \
+        -DKDE_PLATFORM_FEATURE_DISABLE_DEPRECATED=TRUE \
+        -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+        -DCMAKE_C_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+        -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+        -DCMAKE_CXX_FLAGS_RELEASE:STRING="$SLKCFLAGS" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DMAN_INSTALL_DIR=/usr/man \
+        -DSYSCONF_INSTALL_DIR=/etc/kde \
+        -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+        -DSITE="slackware.com" \
+        ..
+      make -C applets/kimpanel/backend/ibus
+      make -C applets/kimpanel/backend/ibus install DESTDIR=$PKG
+  )
 
-find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
+  # Install ibus-kimpanel.desktop
+  sed -e "/^Name/s/=.*/=IBus (KIMPanel)/" \
+      -e "/^Exec/s#=.*#=ibus-daemon --xim --panel=/usr/lib${LIBDIRSUFFIX}/kde4/libexec/kimpanel-ibus-panel#" \
+      $PKG/usr/share/applications/ibus.desktop > $PKG/usr/share/applications/ibus-kimpanel.desktop
+fi
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 # Add profile scripts that set up the environment:
@@ -121,7 +152,7 @@ chmod 0755 $PKG/etc/profile.d/*
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS COPYING ChangeLog NEWS README \
+  AUTHORS COPYING ChangeLog README \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 cat $CWD/README.SBO > $PKG/usr/doc/$PRGNAM-$VERSION/README.SBO
